@@ -1,0 +1,13 @@
+aoi,name,type,date,lat,lon,deaths,precision,source
+uk,Kedarnath flash flood & cloudburst,cloudburst,2013-06-16,30.7346,79.0669,5748,site,NDMA / Govt of Uttarakhand (state-wide toll)
+uk,Rishiganga–Dhauliganga flood (Raini/Tapovan),flood,2021-02-07,30.4935,79.6406,204,site,NDMA / Uttarakhand SDMA
+uk,Joshimath land subsidence,subsidence,2023-01-02,30.5550,79.5643,0,site,NDMA / ISRO NRSC
+uk,Gaurikund landslide,landslide,2023-08-10,30.6553,79.0247,20,site,Uttarakhand SDRF reports
+uk,Ukhimath cloudburst,cloudburst,2012-09-14,30.5175,79.0952,69,approx,Uttarakhand Govt
+uk,Okhimath (Madhyamaheshwar valley) landslides,landslide,1998-08-11,30.5000,79.1700,103,approx,GSI
+uk,Chamoli earthquake (Mw 6.8),earthquake,1999-03-29,30.4100,79.4200,103,epicentre,USGS / IMD
+od,Satabhaya coastal erosion (villages lost to sea),coastal,2000-01-01,20.6000,86.9500,0,approx,Odisha Govt relocation to Bagapatia
+od,Pentha coastal erosion,coastal,2008-01-01,20.5800,86.9300,0,approx,Odisha Govt / media
+od,Odisha Super Cyclone (landfall Paradip),cyclone,1999-10-29,20.2700,86.6700,9885,landfall,IMD (state-wide toll)
+od,Cyclone Yaas storm surge,cyclone,2021-05-26,20.7000,86.9500,0,approx,IMD
+od,Brahmani–Baitarani floods,flood,2011-09-10,20.5000,86.4200,0,approx,Odisha SRC
