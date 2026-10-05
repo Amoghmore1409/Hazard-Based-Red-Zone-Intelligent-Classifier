@@ -1,0 +1,18 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repo.
+services:
+  - type: web
+    name: suraksha
+    runtime: docker
+    plan: free
+    region: singapore          # closest Render region to the Supabase database
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL      # Supabase Session pooler URI (same value as deploy/space.env)
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true    # Render creates a random secret
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b

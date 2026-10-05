@@ -1,5 +1,6 @@
 """SURAKSHA API: Red Zones, habitation priorities, safe sites, allocation, live triggers, reports."""
 import json
+import os
 import threading
 import uuid
 from datetime import datetime
@@ -10,7 +11,7 @@ import pandas as pd
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -36,7 +37,9 @@ AOI_META = {
 S: dict = {}  # in-memory state per AOI: cells, live, habs, sites, plan, live_meta, evac
 
 app = FastAPI(title="SURAKSHA – Multi-Hazard Red Zone DSS", version="1.1", dependencies=[Depends(authorize)])
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# The deployed dashboard is served from this same origin, so CORS is only needed for the Vite dev server.
+CORS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=CORS, allow_methods=["*"], allow_headers=["*"])
 app.mount("/uploads", StaticFiles(directory=UPLOADS), name="uploads")
 
 
@@ -44,19 +47,43 @@ def _q(sql, **kw):
     return pd.read_sql(text(sql), engine, params=kw)
 
 
+CELL_KEEP = ["h3", "lat", "lon", "pop", "hist_500m", "zone", "mhi", "hz_max", "hz_dominant",
+             "hz_landslide", "hz_flood", "hz_cloudburst", "hz_coastal", "hz_surge"]
+
+
+def _compact(df: pd.DataFrame) -> pd.DataFrame:
+    """float64 -> float32, repeated strings -> category: ~3x less memory (fits a 512 MB free host)."""
+    for c in df.columns:
+        if df[c].dtype == "float64":
+            df[c] = df[c].astype("float32")
+        elif df[c].dtype == object or str(df[c].dtype) in ("str", "string"):
+            if df[c].nunique() < len(df) / 2:
+                df[c] = df[c].astype("category")
+    return df
+
+
+def _no_geom(table: str, aoi: str, h3: str | None = None) -> pd.DataFrame:
+    """All columns except the geometry (the API never needs it; skipping it halves start-up transfer)."""
+    cols = _q("SELECT column_name FROM information_schema.columns WHERE table_name = :t AND table_schema = 'public' "
+              "AND column_name <> 'geometry' ORDER BY ordinal_position", t=table).column_name
+    where = "aoi = :a" + (" AND h3 = :h" if h3 else "")
+    return _q(f"SELECT {', '.join(f'{chr(34)}{c}{chr(34)}' for c in cols)} FROM {table} WHERE {where}", a=aoi, h=h3)
+
+
 def load_state():
     with engine.begin() as con:
         con.execute(text(SCHEMA))
     for aoi in AOI_META:
-        cells = _q("SELECT * FROM h3_cells WHERE aoi = :a", a=aoi).drop(columns=["geometry"]).set_index("h3")
-        habs = _q("SELECT * FROM habitations WHERE aoi = :a", a=aoi).drop(columns=["geometry"])
+        cells = _q(f"SELECT {', '.join(CELL_KEEP)} FROM h3_cells WHERE aoi = :a",
+                   a=aoi).dropna(axis=1, how="all").pipe(_compact).set_index("h3")
+        habs = _no_geom("habitations", aoi)
         habs["reasons"] = habs.reasons.map(json.loads)
         habs["cells"] = habs.cells.map(json.loads)
-        sites = _q("SELECT * FROM candidate_sites WHERE aoi = :a", a=aoi).drop(columns=["geometry"])
+        sites = _no_geom("candidate_sites", aoi)
         sites["cells"] = sites.cells.map(json.loads)
         plan = _q("SELECT * FROM relocation_plans WHERE aoi = :a", a=aoi)
         try:
-            road = _q("SELECT hab_id, site_id, road_km FROM road_distances WHERE aoi = :a", a=aoi)
+            road = _compact(_q("SELECT hab_id, site_id, road_km FROM road_distances WHERE aoi = :a", a=aoi))
         except Exception:  # table not built yet (run pipeline/p05b_roads.py + p06_load.py)
             road = None
         S[aoi] = {"cells": cells, "live": cells.copy(), "habs": habs, "sites": sites, "plan": plan, "road": road,
@@ -173,8 +200,8 @@ def startup():
     load_state()
     sched = BackgroundScheduler()
     for aoi in S:
-        sched.add_job(refresh, "interval", minutes=60, args=[aoi])
-        threading.Thread(target=refresh, args=(aoi, "startup"), daemon=True).start()
+        sched.add_job(refresh, "interval", minutes=60, args=[aoi], max_instances=1, coalesce=True)
+    threading.Thread(target=lambda: [refresh(a, "startup") for a in list(S)], daemon=True).start()  # one at a time
     sched.start()
 
 
@@ -234,8 +261,8 @@ def aois(request: Request):
         if allowed and k != allowed:
             continue
         c = S[k]["cells"]
-        out.append({**m, "id": k, "weights": WEIGHTS[k], "center": [c.lat.mean(), c.lon.mean()],
-                    "bbox": [c.lon.min(), c.lat.min(), c.lon.max(), c.lat.max()], "cells": len(c),
+        out.append({**m, "id": k, "weights": WEIGHTS[k], "center": [float(c.lat.mean()), float(c.lon.mean())],
+                    "bbox": [float(v) for v in (c.lon.min(), c.lat.min(), c.lon.max(), c.lat.max())], "cells": len(c),
                     "model": metrics if k == "uk" else None})
     return out
 
@@ -260,7 +287,7 @@ def cell(aoi: str, cell: str):
     st = _aoi(aoi)
     if cell not in st["cells"].index:
         raise HTTPException(404, "cell not in AOI")
-    r = st["cells"].loc[cell]
+    r = _no_geom("h3_cells", aoi, h3=cell).iloc[0]  # full row (all ~30 columns) fetched on demand
     lv = st["live"].loc[cell]
     out = {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in r.items() if k != "aoi"}
     out["factors"] = json.loads(r["ls_factors"]) if isinstance(r.get("ls_factors"), str) else []
@@ -503,3 +530,18 @@ def report(aoi: str, lang: str = "English"):
     pdf = build_pdf(facts, brief, st["cells"], st["habs"], st["sites"], st["plan"])
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="SURAKSHA_{aoi}_{datetime.now():%Y%m%d}.pdf"'})
+
+
+# ---------------------------------------------------------------- built dashboard (production: one container)
+DIST = ROOT / "frontend" / "dist"
+if DIST.exists():
+    app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa(path: str):
+        if path.startswith("api/"):
+            raise HTTPException(404)
+        f = (DIST / path).resolve()
+        if path and f.is_file() and DIST.resolve() in f.parents:  # no path traversal outside dist/
+            return FileResponse(f)
+        return FileResponse(DIST / "index.html")  # client-side routes such as /field

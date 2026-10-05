@@ -1,0 +1,16 @@
+# Runtime dependencies of the API only (the GIS/ML pipeline runs locally, not in the Space)
+fastapi
+uvicorn[standard]
+python-multipart
+sqlalchemy
+psycopg2-binary
+pandas
+numpy
+scikit-learn
+pulp<3
+apscheduler
+reportlab
+matplotlib
+requests
+python-dotenv
+PyJWT

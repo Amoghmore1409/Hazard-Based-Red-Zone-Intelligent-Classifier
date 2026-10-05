@@ -1,5 +1,6 @@
 """Viewer self-registration + admin approval flow check against a running API (python backend/check_register.py).
 Creates throw-away test accounts and deletes them at the end. Reads the admin demo password from .env."""
+import os
 import secrets
 import time
 from pathlib import Path
@@ -13,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backend.app.db import engine  # noqa: E402
 
 env = dotenv_values(Path(__file__).resolve().parents[1] / ".env")
-B = "http://localhost:8000/api"
+B = os.getenv("API_BASE", "http://localhost:8000") + "/api"  # set DATABASE_URL too, so clean-up hits that database
 for _ in range(60):
     try:
         requests.get(B + "/aois", timeout=3)

@@ -52,6 +52,9 @@ npm --prefix frontend run dev        # http://localhost:5173  (field app: /field
 ```
 API docs: http://localhost:8000/docs
 
+### Deploy (free)
+Supabase (database) + Render (API + dashboard, one Docker container from `Dockerfile` / `render.yaml`): step by step in [DEPLOY.md](DEPLOY.md).
+
 ## How it works
 
 | Step | Method |

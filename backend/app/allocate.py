@@ -7,7 +7,6 @@ Distances are by road (OSM network, pipeline/p08_roads.py) when available, else 
 import numpy as np
 import pandas as pd
 import pulp
-from sklearn.neighbors import BallTree
 
 PENALTY = {"immediate": 1e7, "short": 1e6, "medium": 1e5}
 K_NEAREST = 20         # candidate sites considered per habitation
@@ -23,6 +22,7 @@ def _pairs(h: pd.DataFrame, s: pd.DataFrame, road: pd.DataFrame | None) -> pd.Da
             s[["site_id"]].reset_index(names="j"), on="site_id")
         p = p[p.road_km <= MAX_ROAD_KM].rename(columns={"road_km": "km"}).assign(by_road=True)
         return p.sort_values("km").groupby("i").head(K_NEAREST)[["i", "j", "km", "by_road"]]
+    from sklearn.neighbors import BallTree  # fallback only; kept out of the API's import-time memory
     d, idx = BallTree(np.radians(s[["lat", "lon"]]), metric="haversine").query(
         np.radians(h[["lat", "lon"]]), k=min(K_NEAREST, len(s)))
     p = pd.DataFrame({"i": np.repeat(h.index, idx.shape[1]), "j": idx.ravel(), "km": d.ravel() * 6371.0})

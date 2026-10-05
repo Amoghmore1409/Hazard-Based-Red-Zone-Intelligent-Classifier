@@ -1,0 +1,9 @@
+.git
+.venv
+.claude
+.env
+data
+deploy/space.env
+**/node_modules
+**/__pycache__
+frontend/dist

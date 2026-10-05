@@ -5,7 +5,6 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import pandas as pd
 import requests
-from sklearn.neighbors import BallTree
 
 SACHET_RSS = "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml"
 # Alert keyword -> hazard multipliers.
@@ -32,8 +31,11 @@ def rainfall(cells: pd.DataFrame, step=0.1) -> tuple[pd.DataFrame, dict]:
             p = pd.Series(loc["hourly"]["precipitation"]).fillna(0)
             r24.append(p.rolling(24, min_periods=1).sum().max())
             r1.append(p.max())
-    _, idx = BallTree(np.radians(grid), metric="haversine").query(np.radians(cells[["lat", "lon"]]), k=1)
-    out = pd.DataFrame({"r24": np.array(r24)[idx[:, 0]], "r1": np.array(r1)[idx[:, 0]]}, index=cells.index)
+    # Regular grid: the nearest point is found by rounding, row-major (lat outer, lon inner) like `grid`.
+    ia = np.clip(np.rint((cells.lat.to_numpy() - lat[0]) / step).astype(int), 0, len(lat) - 1)
+    io = np.clip(np.rint((cells.lon.to_numpy() - lon[0]) / step).astype(int), 0, len(lon) - 1)
+    idx = ia * len(lon) + io
+    out = pd.DataFrame({"r24": np.array(r24)[idx], "r1": np.array(r1)[idx]}, index=cells.index)
     return out, {"max_r24": float(max(r24)), "max_r1": float(max(r1)), "points": len(grid)}
 
 

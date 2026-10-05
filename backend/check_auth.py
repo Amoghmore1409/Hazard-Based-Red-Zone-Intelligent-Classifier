@@ -1,5 +1,6 @@
 """Role/permission matrix check against a running API (python backend/check_auth.py).
 Needs demo users from `python -m backend.app.auth seed`; reads their passwords from .env and never prints them."""
+import os
 import time
 from pathlib import Path
 
@@ -7,7 +8,7 @@ import requests
 from dotenv import dotenv_values
 
 env = dotenv_values(Path(__file__).resolve().parents[1] / ".env")
-B = "http://localhost:8000/api"
+B = os.getenv("API_BASE", "http://localhost:8000") + "/api"  # e.g. API_BASE=https://<user>-suraksha.hf.space
 for _ in range(60):
     try:
         requests.get(B + "/aois", timeout=3)

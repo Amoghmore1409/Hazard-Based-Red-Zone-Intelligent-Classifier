@@ -6,3 +6,5 @@ data/raw/
 data/processed/
 *.tif
 .claude/launch.json
+deploy/_space/
+deploy/space.env

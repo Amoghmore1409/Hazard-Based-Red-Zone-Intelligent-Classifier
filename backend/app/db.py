@@ -5,7 +5,17 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
-DB_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://suraksha:suraksha@localhost:5433/suraksha")
+
+
+def normalize_url(url: str) -> str:
+    """Supabase/Heroku-style postgres:// or postgresql:// URLs -> the psycopg2 driver we install."""
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg2://" + url[len(prefix):]
+    return url
+
+
+DB_URL = normalize_url(os.getenv("DATABASE_URL", "postgresql+psycopg2://suraksha:suraksha@localhost:5433/suraksha"))
 
 SCHEMA = """
 CREATE EXTENSION IF NOT EXISTS postgis;
