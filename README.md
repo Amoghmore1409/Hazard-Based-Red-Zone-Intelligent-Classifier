@@ -74,19 +74,3 @@ Supabase (database) + Render (API + dashboard, one Docker container from `Docker
 | Carrying capacity | min(land: usable ha × 40% × 200 p/ha · water: 55 LPCD (JJM) source proxy · services: IPHS PHC/school spare capacity) |
 | Allocation | MILP (PuLP/CBC): whole habitations go to one site each (communities stay together), minimise person-km, respect capacity, Immediate cases first |
 
-## Demo script (5 min)
-1. **Permanent Red Zones**, Uttarakhand. Click a red hexagon to see the hazard breakdown and its SHAP landslide drivers.
-2. **Habitations → Immediate**. Open a village to see the explanation, zone breakdown and recommended sites with land, water and services gauges.
-3. **Sites & Plan → Run allocation**. Arcs show habitation → site, with people who could not be placed listed separately.
-4. **What-if → "Cloudburst over Chamoli"**. Active Red cells appear and the list of affected habitations updates.
-5. Switch to **Odisha**. Coastal erosion near Satabhaya, then the **"Severe cyclone landfall"** scenario.
-6. **Field app** (`/field`) on a phone: report ground cracks and watch the village get upgraded to Immediate.
-7. **AI Briefing** (English/Hindi) and **PDF Report**.
-
-## Known limitations (be upfront with judges)
-- Census data is from 2011. Uttarakhand has no open village boundaries, so ~60% of habitations (mostly hamlets) borrow the nearest name-matched village's indicators; SHRUG village polygons (CC BY-NC-SA, needs terms acceptance) would make this exact. Elderly share is not in the village PCA.
-- Road distances ignore travel time and road condition; OSM gaps are bridged up to 150 m.
-- Uploaded field photos are served from unguessable URLs without a login check.
-- Water capacity uses a distance-to-source proxy, not measured yield. Road distances use OSM geometry (no travel time / road condition).
-- OSM has few schools mapped in these districts, so the service score leans on health facilities.
-- This is decision support: Red Zones and priorities must be verified on the ground before any action.
