@@ -29,7 +29,7 @@ export interface Summary {
   counts: Partial<Record<Priority, number>>; people: Partial<Record<Priority, number>>
   evacuation: { habitations: number; people: number }; sites: number; site_capacity: number
   plan_assigned: number; plan_unassigned: number
-  live: { max_r24: number; max_r1: number; refreshed_at?: string; rain_error?: string; alerts?: number; status?: string }
+  live: { max_r24: number; max_r1: number; refreshed_at?: string; rain_error?: string; alerts?: number; status?: string; forecast_source?: string }
   alerts: { title: string; source: string; issued_at: string }[]
 }
 export interface ValidationEvent {

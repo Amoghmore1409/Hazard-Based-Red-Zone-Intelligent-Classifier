@@ -72,7 +72,7 @@ export function Overview({ s, aoi, onHab }: { s: Summary | null; aoi: Aoi | null
           Active Red Zones under the current forecast/alerts.
         </div>
       )}
-      <Card title="Live triggers" right={<span className="text-[11px] text-slate-400">{s.live.refreshed_at ?? s.live.status}</span>}>
+      <Card title="Live triggers" right={<span className="text-[11px] text-slate-400">{s.live.refreshed_at ?? s.live.status}{s.live.forecast_source ? ` · ${s.live.forecast_source}` : ''}</span>}>
         <div className="grid grid-cols-3 gap-2">
           <Stat label="Max 24 h rain (72 h fcst)" value={`${fmt(s.live.max_r24)} mm`} />
           <Stat label="Max hourly rain" value={`${fmt(s.live.max_r1, 1)} mm`} />
