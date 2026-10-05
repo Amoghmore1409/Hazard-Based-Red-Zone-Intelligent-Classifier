@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useRef } from 'react'
 import * as maplibregl from 'maplibre-gl'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { MapboxOverlay } from '@deck.gl/mapbox'
 import { ArcLayer, ScatterplotLayer } from '@deck.gl/layers'
 import { H3HexagonLayer } from '@deck.gl/geo-layers'
 import type { PickingInfo } from '@deck.gl/core'
 import { type Aoi, type CellTable, type Habitation, type PlanRow, type Site, type Zone, PRIORITY_RGB, ZONE_RGB, fmt, ramp } from './api'
+
+// The production build does not copy MapLibre's tile worker; let Vite bundle it and point MapLibre at it,
+// otherwise basemap tiles never draw on the deployed site (deck.gl layers still do).
+maplibregl.setWorkerUrl(workerUrl)
 
 const STYLES = {
   streets: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',

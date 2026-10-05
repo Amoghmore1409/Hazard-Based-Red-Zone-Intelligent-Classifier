@@ -78,7 +78,7 @@ export function Overview({ s, aoi, onHab }: { s: Summary | null; aoi: Aoi | null
           <Stat label="Max hourly rain" value={`${fmt(s.live.max_r1, 1)} mm`} />
           <Stat label="Official alerts" value={fmt(s.live.alerts ?? 0)} sub="NDMA SACHET" />
         </div>
-        {s.live.rain_error && <p className="mt-1 text-[11px] text-amber-700">Forecast unavailable: using static zones.</p>}
+        {s.live.rain_error && <p className="mt-1 text-[11px] text-amber-700" title={s.live.rain_error}>Forecast unavailable: using static zones. <span className="text-slate-500">({s.live.rain_error.slice(0, 120)})</span></p>}
         {s.alerts.map((a, i) => <p key={i} className="mt-1 text-xs text-slate-700">⚠ {a.title}</p>)}
       </Card>
       <Card title="Safe sites & plan">
